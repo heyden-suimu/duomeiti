@@ -1,6 +1,9 @@
  <template>
-    <div class="container songSheet">
+    <div class="container localRelation">
         <el-row>{{`映射列表`}}</el-row>
+        <div class="doSome"> 
+            <el-button @click="someDelete">批量删除</el-button>
+        </div>
         <div class="head_dialog">
             <el-button @click="addSheet"><i class="el-icon-plus"></i>创建新映射</el-button>
             <el-input icon="search" placeholder='搜索歌单' v-model = 'serchInput' :on-icon-click="listSearch"></el-input>
@@ -13,14 +16,14 @@
                 </el-option>
             </el-select>
         </div>
-        <com-list :spreadFormat='rule' :spreadList='test' :headTitle="headTitle" :handle="readSheet" :pageTion='pageTion'></com-list>
+        <com-list :spreadFormat='rule' :spreadList='test' :headTitle="headTitle" :pageTion='pageTion' :spreadType="false"></com-list>
          <el-dialog title="映射" :visible.sync="addMapping">
             <div class="key">
                 <span>关键字：</span>
                 <span>
                    <el-input v-model='keyWord'></el-input>
                 </span>
-                 <el-input icon="search" placeholder='搜索歌单' v-model = 'serchInput' :on-icon-click="listSearch" @keyup.enter.native="listSearch"></el-input>
+                 <el-input icon="search" placeholder='搜索歌单' v-model = 'serchInput' :on-icon-click="listSearch" @keyup.enter.native="listSearch" class= "search"></el-input>
             </div>
             <com-list :spreadList="songSheets" :headTitle="headTitle1" :spreadFormat='rule1' :handle='sendFile' :pageTion="pageTionLog" :secShow="true"></com-list>
         </el-dialog>
@@ -38,25 +41,31 @@
                 type:0,
                 type2:1,
                 sheets:null,
-                headTitle:[{title:'全选',span:1}, {title:'序号',span:3},{title:'歌单',span:3},{title:'类型',span:2}, {title:'标签',span:4}, {title:'操作',span:4}],
+                headTitle:[{title:'全选',span:1}, {title:'序号',span:3},{title:'关键字',span:3},{title:'歌单名称',span:2}, {title:'类型',span:4}, {title:'操作',span:4}],
                 test:null,
                 dialogFormVisible:false, 
                 types:[{value:'全部',code:0},{value:'歌单',code:1},{value:'节目',code:2}],
                 types2:[{value:'音乐',code:1},{value:'节目',code:2}],
                 headTitle1:[{title:'全选',span:2},{title:'序号',span:1},{title:'歌单',span:4},{title:'类型',span:4},{title:'描述',span:4}],
-                rule:{},
+                rule1:{},
+                rule:{
+                    text:[{name:"index",span:1},{name:"key",span:1}, {name:"targetName",span:4}, {name:"type",span:4}]
+                },
                 serchInput:'',
                 copyTest:{},
                 sheetTotal:0,
                 dialogTableVisible:false,
                 addMapping:false,
                 keyWord:'',
-                mtName:''
+                mtName:'',
+                songSheets:[],
+                buntype:1,
             }
         },
         mounted(){        
             this.init()
             this.$on('pageNation',this.init)
+            this.$on('pageNation1',this.initSongs)
         },
         created(){
             this.getRule()  
@@ -69,37 +78,39 @@
                 'getSuccess'
                 ]),
             getRule(){
-                this.rule.text = [{name:"index",span:1}, {name:"name",span:4}, {name:"type",span:4}, {name:"tags",span:8}];
-                this.rule.icons = [];
-                let makeCoin = [{icon:'el-icon-heyden-icon_download',method:this.localDown},{icon:'el-icon-heyden-dianping',method:this.edit},{icon:'el-icon-heyden-icon_delete_fill',method:this.deleteSheet, type:'delete'}]
-                makeCoin.map((value)=>{
-                    this.rule.icons.push({icon : value.icon, method:value.method});
-                }) 
+                this.rule1.text = [{name:"index",span:1}, {name:"name",span:4}, {name:"type",span:4}, {name:'description',span:1}];
+                this.rule.icons = [{icon:'el-icon-heyden-icon_setting',method:this.edit},{icon:'el-icon-heyden-icon_delete_fill',method:this.deleteRe}];
             },
             async init(start=0,count=10,page=1){
                 let data = await keywordsMapping();
                 if(data.code  == 0){
                     this.test = data.res;
                     this.copyTest = data.res;
-                    this.pageTion = {total:data.res.totalCount,currentSize:count,currentPage:page,show:true};
+                    this.pageTion= {total:data.res.totalCount,currentSize:count,currentPage:page,show:true};
                     if(this.test.length<1) this.pageTion.show = false;
                 }
                 
             },
-            getType(){
-                
-            },  
+            async initSongs(start=0,count=10,page=1){
+                let res = await apiSongSheet('get',{start:start,count:count});
+                if(res.code  == 0){
+                    this.songSheets = res.res.audioLists;
+                    this.pageTionLog ={total:res.res.totalCount,currentSize:count,currentPage:page,show:true}
+                }else{
+                    layer(this,this.message)
+                }            
+            },
             addSheet(){
                 this.addMapping = true;
+                this.initSongs();
             },
-            async deleteSheet(row,resovle,reject){
-                if(!row.audioListId) return;
+            async deleteRe(row,resovle,reject){
                 this.$confirm('是否删除该歌单？', '提示', {
                   confirmButtonText: '确定',
                   cancelButtonText: '取消',
                   type: 'warning'
                 }).then(async () => {
-                    let data = await apiSongSheet('delete', {audioListId:row.audioListId});
+                    let data = await keywordsMapping ('delete', {keywordsMappingId:row.keywordsMappingId});
                     if(data.code == 0){
                         layer(this,'删除成功','success');
                         resovle('success')
@@ -108,14 +119,26 @@
                     }
                 }).catch((err) => {
                       reject('error')      
-                }); 
-               
+                });              
             },
             edit(row){
-                this.$router.push({path:'addSongSheet',query:{row:JSON.stringify(row)}})
-            },
-            readSheet(data){
-                this.$router.push({path:'musicList', query:{row:JSON.stringify(data)}})
+                 this.$confirm(`是否${row.status?'禁用':'启用'}该映射`, '提示', {
+                  confirmButtonText: '确定',
+                  cancelButtonText: '取消',
+                  type: 'warning'
+                }).then(async () => {
+                    let data = await keywordsMapping('put',{
+                      "keywordsMappingId": row.keywordsMappingId,
+                      "status": !row.status
+                    })
+                    if(data.code == 0){
+                        layer(this, "配置成功",'success')
+                    }else{
+                        layer(this, data.message)
+                    }
+                }).catch((err) => {
+                      reject('error')      
+                });
             },
             async localDown(data){
                 let res =  await apiSongSheet('put',{
@@ -135,23 +158,27 @@
                 });
                 this.test =  searchList.getMultFilter()    
             },
-            async subTime(){
-                if(!this.keyWord) layer(this,'请填入关键字')
-                if(!this.mtName) layer(this,'请填入媒体名称')
-                let obj = {
+            async sendFile(data){   
+               if(!this.keyWord) {
+                 layer(this,'请填入关键字')
+                 return
+               }
+               let obj = {
                       "key": this.keyWord,
-                      "targetName": this.mtName,
+                      "targetName": data.name,
+                      "targetId": data.audioListId,
                       "status": true,
-                      "type": this.type2
+                      "type": data.type
                     }
-                let data = await keywordsMapping('post', obj);
-                if(data.code == 0){
+                let res = await keywordsMapping('post', obj);
+                if(res.code == 0){
                     layer(this,'新建成功','success');
+                    this.addMapping = false
                     resovle('success')
                 }else{
-                    layer(this,data.message)
+                    layer(this,res.message)
                 }
-            }
+            },
         },
         destroyed(){
             this.$store.state.currentSize = 10
@@ -214,6 +241,10 @@
             .key{
                 .el-input{
                     width: 20%;
+                }
+                .search{
+                    width: 40%;
+                    margin-left: 5%;
                 }
             }
         }

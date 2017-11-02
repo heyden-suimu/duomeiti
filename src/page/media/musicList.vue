@@ -34,7 +34,7 @@
 <script>
     import comList from "./comList"
     import {layer, searh} from '../../components/common/common'
-    import {apiSongSheet, getAudios, moveAudio, songurl} from "../../service/getData"
+    import {apiSongSheet, getAudios, moveAudio, songurl, apiAudio} from "../../service/getData"
     import {mapActions} from 'vuex'
     export default {
     	data(){
@@ -92,8 +92,25 @@
                     this.pageTion = {total:data.res.totalCount,currentSize:count,currentPage:page,show:true};
                 }   
             },
-            getType(){
-                
+            async Bun(data){
+                this.$confirm(`是否${data.status?'禁用':'启用'}该音频？`, '提示', {
+                  confirmButtonText: '确定',
+                  cancelButtonText: '取消',
+                  type: 'warning'
+                }).then(async() => {
+                    let res = await apiAudio('put',{
+                        audioId:data.audioId,
+                        status:!data.status
+                    })
+
+                    if(res.code == 0){
+                        layer(this,'配置成功','success')   
+                    }else{
+                        layer(this,res.message)
+                    }
+                }).catch((err) => {
+                         
+                });
             },  
             search(){
                 this.$router.push('result')
@@ -184,14 +201,14 @@
                 }
             },
             someDelete(){
-                this.$confirm(`是否删除选中歌单？`, '提示', {
+                this.$confirm(`是否删除选中音频？`, '提示', {
                   confirmButtonText: '确定',
                   cancelButtonText: '取消',
                   type: 'warning'
                 }).then(() => {
                     this.$refs.songSheet.checkArr.map(async (item,index)=>{
                         if(item){
-                            let data = await moveAudio('delete', {audioListId:this.rowSheet.audioListId, audioId:this.rowSheet.audioId});
+                            let data = await moveAudio('delete', {audioListId:this.rowSheet.audioListId, audioId:this.test[index].audioId});
                             if(data.code == 0){
                                 layer(this,'删除成功','success');
                             }else{

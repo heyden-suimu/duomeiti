@@ -1,6 +1,9 @@
  <template>
     <div class="container songSheet localSheet">
         <el-row>{{`本地列表`}}</el-row>
+        <div class="doSome"> 
+            <el-button @click="someDelete">批量删除</el-button>
+        </div>
         <div class="head_dialog">
             <el-input icon="search" placeholder='搜索歌单' v-model = 'serchInput' :on-icon-click="listSearch"
             @keyup.enter.native="listSearch"></el-input>
@@ -82,11 +85,11 @@
                     this.test = data.res.audios;
                     this.copyTest = data.res.audios;
                     this.pageTion = {total:data.res.totalCount,currentSize:count,currentPage:page,show:true};
+                    this.pageStart = start;
+                    this.pageCount = count;
+                    this.page = page;
                 }           
             },
-            getType(){
-                
-            },  
             search(){
                 this.$router.push('result')
             },
@@ -175,23 +178,23 @@
                 }
             },
             Bun(data){
-                this.rowList = data;
-                this.$confirm(`是否${this.bunType}该音频？`, '提示', {
+                this.$confirm(`是否${data.status?'禁用':'启用'}该音频？`, '提示', {
                   confirmButtonText: '确定',
                   cancelButtonText: '取消',
                   type: 'warning'
                 }).then(async() => {
                     let res = await apiAudio('put',{
-                        audioId:this.rowList.audioId,
-                        status:!this.rowList.status
+                        audioId:data.audioId,
+                        status:!data.status
                     })
                     if(res.code == 0){
-                        layer(this,'配置成功','success')   
+                        layer(this,'配置成功','success')
+                        this.init(this.pageStart,this.pageCount,this.page)   
                     }else{
                         layer(this,res.message)
                     }
                 }).catch((err) => {
-                      reject('error')      
+       
                 });
             },
             async readyFile(data){
@@ -205,7 +208,28 @@
                     }
                     this.dialogFormVisible = true;
             },
-
+            someDelete(){
+                this.$confirm(`是否删除选中音频？`, '提示', {
+                  confirmButtonText: '确定',
+                  cancelButtonText: '取消',
+                  type: 'warning'
+                }).then(() => {
+                    this.$refs.songSheet.checkArr.map(async (item,index)=>{
+                        if(item){
+                            let data = await apiAudio('delete', {audioId:this.test[index].audioId});
+                            if(data.code == 0){
+                                layer(this,'删除成功','success');
+                                this.init(this.pageStart,this.pageCount,this.page)
+                            }else{
+                                layer(this,data.ch)
+                            }
+                        }
+                        if(index == this.$refs.songSheet.checkArr.length-1) this.init() 
+                    })
+                }).catch((err) => {
+                      reject('error')      
+                });
+            }
         },
         // destroyed(){
         //     this.Items = null;

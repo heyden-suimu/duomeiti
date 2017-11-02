@@ -226,7 +226,7 @@ html,body{
     -webkit-animation: toTurn 1.5s linear  infinite;  /* Safari 和 Chrome */
     -o-animation: toTurn 1.5s linear  infinite;   /* Opera */
 }
-.result{
+.result, .localRelation{
     .el-dialog{
         width: 60%;
         bottom: 0%;

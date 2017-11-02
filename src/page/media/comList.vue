@@ -7,7 +7,7 @@
         <el-row v-for='(item,index) in spreadList' v-rowClick="[handle,item]" v-dragging='getDragg(item,spreadList, index)' :class="{'bunSet':bunSet(item),'spreadList':true}">
             <el-col :span='1'><el-checkbox v-model="checkArr[index]" v-boxClick='[spreadList,item]'></el-checkbox></el-col>
             <el-col v-for='(spread,code) in spreadFormat.text' class="title_col" :title="showSpread(spread&&spread.name,item,index)">
-            <img :src='item&&item.iconUrl' v-if="code == 0&&item">{{spread&&spread.name|show(item,index)}}</el-col>
+            <img :src='item&&item.iconUrl' v-if="code == 0&&item&&spreadType==='img'">{{spread&&spread.name|show(item,index)}}</el-col>
             <el-col v-for='data in spreadFormat.icons'  :span='1' ><span :class='coinClass(data,item)' :title='filterTitle(data.icon)' v-typeClick='[data, item, index, spreadList, $store.state.successStation]' v-if="isShow(item, data)"></span></el-col>
         </el-row>
         <div class="msg" v-if="msg">{{msg}}</div>
@@ -87,6 +87,9 @@
             },
             secShow:{
                 default:false,
+            },
+            spreadType:{
+                default:'img',
             },
         },
         filters:{
