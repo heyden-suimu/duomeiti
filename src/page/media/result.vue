@@ -8,8 +8,9 @@
         <div class="el-icon-arrow-left back" @click="back">返回</div>
         <el-dialog title="" :visible.sync="dialogFormVisible" size="small">
             <div class="head_dialog">
-                <!-- <span><i class="el-icon-plus"></i>移动到新歌单</span> -->
-                <el-input icon="search" placeholder='搜索歌单' v-model = 'serchInput' :on-icon-click="listSearch" @keyup.enter.native="listSearch"></el-input>
+                <span @click="moveNew(false)" v-if='addNew'><i class="el-icon-plus"></i>移动到新歌单</span>
+                <span v-if='!addNew'><el-input placeholder="请输入歌单名称" v-model="newName"></el-input><span class="el-icon-heyden-icon_checkbox_fill" style="font-size:24px;margin-left:.4rem;" @click="addNewMove"></span><span class="el-icon-heyden-icon_roundclose_fill" @click="moveNew(true)" style="font-size:24px;margin-left:.4rem;"></span></span>
+                <el-input icon="search" placeholder='搜索歌单' v-model = 'serchInput' :on-icon-click="listSearch" @keyup.enter.native="listSearch" v-if='addNew'></el-input>
             </div>
              
             <com-list :spreadList="songSheets" :headTitle="headTitle1" :spreadFormat='rule1' :handle='sendFile' :pageTion="pageTionLog" :secShow="true"></com-list>
@@ -31,7 +32,7 @@
 <script>
     import comList from "./comList"
     import {apiSongSheet, getToken, localAudio, moveAudio, jieMuApi, browse} from "../../service/getData"
-    import {layer} from '../../components/common/common'
+    import {layer, searh} from '../../components/common/common'
     export default {
     	data(){
             let types1 = [{value:'歌单'},{value:'歌曲'},{value:'节目'}];
@@ -53,7 +54,9 @@
                 row:{},
                 showMusicPlayer:false,
                 spreadList:[],
-                showSheet:false
+                showSheet:false,
+                addNew:true,
+                newName:''
             }
         },
         mounted(){
@@ -130,27 +133,21 @@
                 }).then(() => {
                     this.localMt()
                 }).catch((err) => {
-                      reject('error')      
+                    reject('error')      
                 });
             },
             async initSongs(start=0,count=10,page=1){
                 let res = await apiSongSheet('get',{start:start,count:count});
                 if(res.code  == 0){
                     this.songSheets = res.res.audioLists;
+                    this.copyTest = res.res.audioLists;
                     this.pageTionLog ={total:res.res.totalCount,currentSize:count,currentPage:page,show:true}
                 }else{
                     layer(this,this.message)
                 }            
             },
             async localMt(){
-                if(!this.songSheets){
-                    let res = await apiSongSheet();
-                    if(res.code  == 0){
-                        this.songSheets = res.res.audioLists;
-                    }else{
-                        layer(this,this.message)
-                    }
-                }
+                this.initSongs();
                 let local;
                 let obj = {
                   "sourceId": "string",
@@ -173,6 +170,9 @@
                 if(local.code == 0){
                     this.row.audioId = local.res.audioId;
                     this.dialogFormVisible = true;
+                }else if(local.code = -1108){
+                     this.row.audioId = local.audioId;
+                     this.dialogFormVisible = true;
                 }else{
                     layer(this,local.ch)
                 }
@@ -224,6 +224,62 @@
                 let mus = document.getElementById('Music');
                 mus.pause();
                 this.showMusicPlayer = false;
+            },
+            listSearch(){
+                let searchList = new searh({
+                    destArr: this.copyTest, 
+                    searhArr:[{name:'name', value:this.serchInput}]
+                });
+                this.songSheets =  searchList.getMultFilter()  
+                this.pageTion.show = !!!this.serchInput
+            },
+            moveNew(bol){
+                this.addNew = bol;
+            },
+            async addNewMove(){
+                let songSheet;
+                if(!this.newName){
+                    layer(this,'歌单名称不能为空')
+                    return;
+                }
+                let data = await apiSongSheet('post', {
+                    name:this.newName,
+                    // description:'移入新歌单',
+                    creator:'admin',
+                    type:this.row.type,
+                });
+                if(data.code == 0){
+                    songSheet = data.audioListId;
+                }else{
+                    layer(this,data.message)
+                }
+                let res;
+                if(this.row.type == 1){
+                    let obj = {
+                        audioId:this.row.audioId,
+                        audioListId:songSheet
+                    }
+                    res = await moveAudio('post',obj)
+                }else{
+                    let obj = {
+                      "audioListId":songSheet,
+                      "sourceId": this.row.sourceId,
+                      "source": this.row.source||'ximalaya',
+                      localization:false,
+                      count:0,
+                      name:this.row.name,
+                      iconUrl:this.row.iconUrl
+                    }
+                    res = await jieMuApi('post',obj)
+                }
+                if(res.code == 0){
+                    layer(this,"已添加到新建歌单",'success')
+                    this.dialogFormVisible = false;
+                }else{
+                    console.log(res)
+                   layer(this,res.ch||res.message||res.msg.message||res.msg[0].message)
+                   debugger
+                }
             }
         }
     }

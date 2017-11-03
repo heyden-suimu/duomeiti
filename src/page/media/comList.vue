@@ -4,7 +4,7 @@
             <el-checkbox v-if='headTitle[0].title=="全选"' @change='allSelect' v-model='allselect'></el-checkbox>
             <span v-for='item in headTitle' :span='item.span' @click="allSelect">{{item.title|titleShow}}</span>
         </div>
-        <el-row v-for='(item,index) in spreadList' v-rowClick="[handle,item]" v-dragging='getDragg(item,spreadList, index)' :class="{'bunSet':bunSet(item),'spreadList':true}">
+        <el-row v-for='(item,index) in spreadList' v-rowClick="[handle,item]" v-dragging='getDragg(item,spreadList, index)' :class="{'bunSet':bunSet(item),'spreadList':true}" v-if="vbind">
             <el-col :span='1'><el-checkbox v-model="checkArr[index]" v-boxClick='[spreadList,item]'></el-checkbox></el-col>
             <el-col v-for='(spread,code) in spreadFormat.text' class="title_col" :title="showSpread(spread&&spread.name,item,index)">
             <img :src='item&&item.iconUrl' v-if="code == 0&&item&&spreadType==='img'">{{spread&&spread.name|show(item,index)}}</el-col>
@@ -32,7 +32,7 @@
            return{
                 checkArr: [],
                 allselect:false,
-                pageTionNmae:'pageNation'
+                vbind:true,
            }
         },
         mounted(){
@@ -233,7 +233,7 @@
         },
         directives:{
             typeClick:{
-                bind(el, binding, vnode){
+                binding(el, binding, vnode){
                     el.addEventListener('click', async function(){
                         event.stopPropagation();
                         if(!binding.value[0]) return
@@ -249,6 +249,25 @@
                         }
                     })
                 },
+                unbind(){
+                    console.log(1)
+                }
+                // update(el, binding, vnode){
+                //     el.addEventListener('click', async function(){
+                //         event.stopPropagation();
+                //         if(!binding.value[0]) return
+                //         function success(){
+                //             let promise = new Promise(function(resolve, reject){
+                //                 let res = binding.value[0].method(binding.value[1],resolve,reject)
+                //             })
+                //             return promise;
+                //         }
+                //         let station = await success()
+                //         if(station = 'success'){
+                //             binding.value[3].splice(binding.value[2],1)
+                //         }
+                //     })
+                // }
             },
             rowClick:{
                 bind(el, binding, vnode){

@@ -146,10 +146,6 @@
                     layer(this,'歌单名称不能为空')
                     return
                 }
-                if(!this.songSheet.description){
-                    layer(this,'歌单描述不能为空')
-                    return
-                }
                 this.songSheet.startTime = this.dateTime[0]&&this.dateTime[0].getTime();
                 this.songSheet.endTime = this.dateTime[1]&&this.dateTime[1].getTime();
                 this.songSheet.type = this.type == '音乐'?1:2;

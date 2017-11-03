@@ -75,7 +75,7 @@
                 headTitle:[{title:'全选',span:1}, {title:'歌单序号',span:3},{title:'名称',span:3},{title:'类型',span:2}, {title:'标签',span:4},{title:'描述',span:4}, {title:'操作',span:8}],
                 test:null,
                 dialogFormVisible:false, 
-                types:[{value:'全部',code:0},{value:'歌单',code:1},{value:'节目',code:2}],
+                types:[{value:'全部',code:0},{value:'音乐',code:1},{value:'节目',code:2}],
                 rule:{},
                 serchInput:'',
                 copyTest:{},
@@ -119,6 +119,9 @@
                     this.test = data.res.audioLists;
                     this.copyTest = data.res.audioLists;
                     this.pageTion = {total:data.res.totalCount,currentSize:count,currentPage:page,show:true};
+                    this.pageStart = start;
+                    this.pageCount = count;
+                    this.page = page;
                 }
                 
             },
@@ -198,7 +201,10 @@
                                 layer(this,data.message)
                             }
                         }
-                        if(index == this.$refs.songSheet.checkArr.length-1) this.init() 
+
+                        if(index == this.$refs.songSheet.checkArr.length-1){
+                            debugger
+                            this.init(this.pageStart,this.pageCount,this.page) }
                     })
                 }).catch((err) => {
                       reject('error')      

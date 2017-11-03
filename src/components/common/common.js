@@ -36,7 +36,7 @@ class searh {
 	filterData(name, value, destArr = this.destArr){
 		if(!value) return destArr
 		let arr = destArr.filter((item)=>{
-			return item[name].includes(value);
+			return item[name].hasOwnProperty('includes')&&item[name].includes(value)||item[name]==value;
 		})
 		return arr
 	}
